@@ -1,0 +1,35 @@
+{
+  "name": "@kunstmaan/hyperledger-fabric-client-utils",
+  "version": "0.1.0",
+  "description": "Client utilities for communicating with chaincode  Hyperledger Fabric.",
+  "main": "./src/index.js",
+  "scripts": {
+    "lint": "eslint src/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kunstmaan/hyperledger-fabric-client-utils.git"
+  },
+  "keywords": [
+    "Chaincode",
+    "Hyperledger",
+    "Fabric"
+  ],
+  "author": "janb87",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kunstmaan/hyperledger-fabric-client-utils/issues"
+  },
+  "homepage": "https://github.com/Kunstmaan/hyperledger-fabric-client-utils#readme",
+  "devDependencies": {
+    "eslint": "^4.16.0",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0"
+  },
+  "dependencies": {
+    "fabric-client": "^1.1.0-preview",
+    "lodash.droprightwhile": "^4.6.0",
+    "log4js": "^2.5.2"
+  }
+}
