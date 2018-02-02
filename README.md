@@ -111,12 +111,6 @@ await service.createCar(defaultUserId, {
 });
 
 const newCar = await service.queryCar(defaultUserId, randomId);
-expect(newCar).toEqual({
-    color: 'Black',
-    make: 'Porsche',
-    model: 'Cayenne',
-    owner: 'Ronny'
-});
 ```
 
 ### query
