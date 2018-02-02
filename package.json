@@ -1,6 +1,6 @@
 {
   "name": "@kunstmaan/hyperledger-fabric-client-utils",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Client utilities for communicating with chaincode  Hyperledger Fabric.",
   "main": "./src/index.js",
   "scripts": {
