@@ -1,6 +1,6 @@
 const invoke = require('./invoke');
 const query = require('./query');
-const logger = require('../logging/logger').getLogger('services/baseService');
+const logger = require('../logging/logger').getLogger('lib/baseService');
 const createFabricClient = require('./createFabricClient');
 
 module.exports = (
@@ -31,21 +31,22 @@ module.exports = (
         }) => {
             const fabricClient = await createFabricClient(keyStorePath);
             const options = {
-                fabricClient,
                 chaincode: setChaincodeOption(chaincode),
                 channelId,
                 peer,
                 userId
             };
             logger.info(`Query options: ${JSON.stringify(options)}`);
-            return query(options);
+            return query({
+                ...options,
+                fabricClient
+            });
         },
         async ({
             chaincode, channelId = defaultChannelId, peers = defaultPeers, orderer = defaultOrderer, userId
         }) => {
             const fabricClient = await createFabricClient(keyStorePath);
             const options = {
-                fabricClient,
                 chaincode: setChaincodeOption(chaincode),
                 channelId,
                 peers,
@@ -53,7 +54,10 @@ module.exports = (
                 userId
             };
             logger.info(`Invoke options: ${JSON.stringify(options)}`);
-            return invoke(options);
+            return invoke({
+                ...options,
+                fabricClient
+            });
         }
     );
 
