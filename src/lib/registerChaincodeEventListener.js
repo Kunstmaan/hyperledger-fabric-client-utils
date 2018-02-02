@@ -1,25 +1,31 @@
-const createFabricClient = require('./createFabricClient');
-const setUserContext = require('./setUserContext');
-const loadPeerCert = require('./loadPeerCert');
-const logger = require('../logging/logger').getLogger('fabric/registerChaincodeEventListener');
+const setUserContext = require('../utils/setUserContext');
+const loadCert = require('../utils/loadCert');
+const logger = require('../logging/logger').getLogger('lib/registerChaincodeEventListener');
+const isGrpcs = require('../utils/isGrpcs');
+const createChannel = require('../utils/createChannel');
 
-function setupEventHub(peer, orderer, channelId, callback) {
-    let fabricClient = null;
-
+function setupEventHub(fabricClient, peer, orderer, channelId, callback) {
     return Promise.resolve()
-        .then(() => createFabricClient({peers: [peer], orderer, channelId}))
-        .then(({fabricClient: _fabricClient}) => {
-            fabricClient = _fabricClient;
+        .then(() =>
+            createChannel({
+                fabricClient,
+                channelId,
+                peers: [peer],
+                orderer
+            }))
+        .then(() => {
+            if (!isGrpcs(peer.url)) {
+                return Promise.resolve();
+            }
+            return loadCert(peer.certPath, peer.certOptions);
         })
-        .then(() => loadPeerCert(peer))
         .then((peerCertOptions) => {
             const eventHub = fabricClient.newEventHub();
             eventHub.setPeerAddr(peer.broadcastUrl, peerCertOptions);
 
-            return setUserContext(fabricClient, peer.adminUserId)
-                .then(() => {
-                    return eventHub;
-                });
+            return setUserContext(fabricClient, peer.adminUserId).then(() => {
+                return eventHub;
+            });
         })
         .then(callback)
         .catch((error) => {
@@ -29,9 +35,10 @@ function setupEventHub(peer, orderer, channelId, callback) {
 }
 
 module.exports = function registerChaincodeEventListener({
+    fabricClient,
     peer,
     orderer,
-    channel,
+    channelId,
     chaincode,
     eventId,
     onEvent,
@@ -42,7 +49,7 @@ module.exports = function registerChaincodeEventListener({
     let eventHubMaster = null;
     // Listening for requests and keep requests in sync
     logger.info(`Setting up event hub for ${eventId} on ${chaincode}`);
-    const eventHubPromise = setupEventHub(peer, orderer, channel, (eventHub) => {
+    const eventHubPromise = setupEventHub(fabricClient, peer, orderer, channelId, (eventHub) => {
         eventHubMaster = eventHub;
         const startListening = () => {
             logger.info(`Start listening for ${eventId} on ${chaincode}`);
@@ -58,13 +65,16 @@ module.exports = function registerChaincodeEventListener({
                         logger.info(`Event payload ${JSON.stringify(payload)}`);
                         onEvent(payload, eventId);
                     }
-                }, (error) => {
+                },
+                (error) => {
                     logger.warn(`Private Eventhub disconnected, trying to reconnect ${error}`);
-                    Promise.resolve().then(() => {
-                        return typeof onDisconnect === 'function' ? onDisconnect(error, eventId) : undefined;
-                    }).then(() => {
-                        setTimeout(startListening, timeoutForReconnect);
-                    });
+                    Promise.resolve()
+                        .then(() => {
+                            return typeof onDisconnect === 'function' ? onDisconnect(error, eventId) : undefined;
+                        })
+                        .then(() => {
+                            setTimeout(startListening, timeoutForReconnect);
+                        });
                 }
             );
         };

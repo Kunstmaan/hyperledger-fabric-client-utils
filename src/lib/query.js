@@ -1,24 +1,24 @@
-const setUserContext = require('./fabric/setUserContext');
-const createFabricClient = require('./fabric/createFabricClient');
-const serializeArg = require('./utils/serializeArg');
-const logger = require('./logging/logger').getLogger('query');
 const dropRightWhile = require('lodash.droprightwhile');
-const parseErrorMessage = require('./fabric/parseErrorMessage');
+const setUserContext = require('../utils/setUserContext');
+const createChannel = require('../utils/createChannel');
+const serializeArg = require('../utils/serializeArg');
+const logger = require('../logging/logger').getLogger('lib/query');
+const parseErrorMessage = require('../utils/parseErrorMessage');
 
 module.exports = function query({
-    chaincode,
-    channelId,
-    peer,
-    userId
+    fabricClient, chaincode, channelId, peer, userId
 }) {
     return new Promise((resolve, reject) => {
-        let fabricClient = null;
         let channel = null;
 
         Promise.resolve()
-            .then(() => createFabricClient({peers: [peer], channelId}))
-            .then(({fabricClient: _fabricClient, channel: _channel}) => {
-                fabricClient = _fabricClient;
+            .then(() =>
+                createChannel({
+                    fabricClient,
+                    channelId,
+                    peers: [peer]
+                }))
+            .then((_channel) => {
                 channel = _channel;
             })
             .then(() => setUserContext(fabricClient, userId))
@@ -26,7 +26,9 @@ module.exports = function query({
                 const request = {
                     chaincodeId: chaincode.id,
                     fcn: chaincode.fcn,
-                    args: chaincode.args ? dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined') : []
+                    args: chaincode.args
+                        ? dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined')
+                        : []
                 };
 
                 // send the query proposal to the peer

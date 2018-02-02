@@ -1,16 +1,19 @@
 const util = require('util');
-const loadPeerCert = require('./fabric/loadPeerCert');
-const setUserContext = require('./fabric/setUserContext');
-const createFabricClient = require('./fabric/createFabricClient');
-const serializeArg = require('./utils/serializeArg');
-const parseErrorMessage = require('./fabric/parseErrorMessage');
-const logger = require('./logging/logger').getLogger('invoke');
 const dropRightWhile = require('lodash.droprightwhile');
+const {URL} = require('url');
+const loadCert = require('../utils/loadCert');
+const setUserContext = require('../utils/setUserContext');
+const serializeArg = require('../utils/serializeArg');
+const parseErrorMessage = require('../utils/parseErrorMessage');
+const logger = require('../logging/logger').getLogger('lib/invoke');
+const isGrpcs = require('../utils/isGrpcs');
+const createChannel = require('../utils/createChannel');
 
 const MAX_RETRIES_EVENT_HUB = 5;
 const MAX_TIMEOUT = 30000;
 
 module.exports = function invoke({
+    fabricClient,
     chaincode,
     channelId,
     peers = [],
@@ -20,7 +23,8 @@ module.exports = function invoke({
 }) {
     const peersMap = {};
     (peers || []).forEach((peer) => {
-        peersMap[peer.cn] = peer;
+        const peerUrl = new URL(peer.url);
+        peersMap[peerUrl.host.toLowerCase()] = peer;
     });
     const uniquePeers = Object.values(peersMap);
 
@@ -30,13 +34,16 @@ module.exports = function invoke({
 
     return new Promise((resolve, reject) => {
         let txId = null;
-        let fabricClient = null;
         let channel = null;
         let transactionProposalResponse = null;
         Promise.resolve()
-            .then(() => createFabricClient({peers: uniquePeers, orderer, channelId}))
-            .then(({fabricClient: _fabricClient, channel: _channel}) => {
-                fabricClient = _fabricClient;
+            .then(createChannel({
+                fabricClient,
+                channelId,
+                peers,
+                orderer
+            }))
+            .then((_channel) => {
                 channel = _channel;
             })
             .then(() => setUserContext(fabricClient, userId))
@@ -54,7 +61,9 @@ module.exports = function invoke({
                 };
 
                 if (uniquePeers && uniquePeers.length > 0) {
-                    logger.info(`Sending transaction proposal to following endorser peers: ${uniquePeers.map((uniquePeer) => uniquePeer.url).join(', ')}`);
+                    logger.info(`Sending transaction proposal to following endorser peers: ${uniquePeers
+                        .map((uniquePeer) => uniquePeer.url)
+                        .join(', ')}`);
                 }
 
                 // send the transaction proposal to the peers
@@ -88,10 +97,11 @@ module.exports = function invoke({
 
                 if (isProposalGood) {
                     const peerForListening = uniquePeers[0];
-                    return loadPeerCert(peerForListening).then((peerCertOptions) => {
+                    const waitForTransactionCompleted = (peerCertOptions) => {
                         logger.info(util.format(
                             'Successfully sent Proposal and received ProposalResponse: Status - %s, message - "%s"',
-                            proposalResponses[0].response.status, proposalResponses[0].response.message
+                            proposalResponses[0].response.status,
+                            proposalResponses[0].response.message
                         ));
 
                         // build up the request for the orderer to have the transaction committed
@@ -126,38 +136,45 @@ module.exports = function invoke({
                                 .then(() => {
                                     const handle = setTimeout(() => {
                                         eventHub.disconnect();
-                                        txPromiseReject(new Error('Transaction did not complete within the allowed time'));
+                                        const err = new Error('Transaction did not complete within the allowed time');
+                                        txPromiseReject(err);
                                     }, maxTimeout);
                                     let retries = 0;
                                     const startListening = () => {
                                         eventHub.connect();
-                                        eventHub.registerTxEvent(transactionIdString, (tx, code) => {
-                                            // this is the callback for transaction event status
-                                            // first some clean up of event listener
-                                            clearTimeout(handle);
-                                            eventHub.unregisterTxEvent(transactionIdString);
-                                            eventHub.disconnect();
+                                        eventHub.registerTxEvent(
+                                            transactionIdString,
+                                            (tx, code) => {
+                                                // this is the callback for transaction event status
+                                                // first some clean up of event listener
+                                                clearTimeout(handle);
+                                                eventHub.unregisterTxEvent(transactionIdString);
+                                                eventHub.disconnect();
 
-                                            // now let the application know what happened
-                                            const returnStatus = {event_status: code, tx_id: transactionIdString};
-                                            if (code !== 'VALID') {
-                                                logger.error(`The transaction was invalid, code = ${code}`);
-                                                txPromiseReject(new Error(returnStatus));
-                                            } else {
-                                                // eslint-disable-next-line no-underscore-dangle
-                                                logger.info(`The transaction has been committed on peer ${eventHub._ep._endpoint.addr}`);
-                                                txPromiseResolve(returnStatus);
+                                                // now let the application know what happened
+                                                const returnStatus = {event_status: code, tx_id: transactionIdString};
+                                                if (code !== 'VALID') {
+                                                    logger.error(`The transaction was invalid, code = ${code}`);
+                                                    txPromiseReject(new Error(returnStatus));
+                                                } else {
+                                                    logger.info(`The transaction has been committed on peer ${
+                                                        // eslint-disable-next-line no-underscore-dangle
+                                                        eventHub._ep._endpoint.addr
+                                                    }`);
+                                                    txPromiseResolve(returnStatus);
+                                                }
+                                            },
+                                            (err) => {
+                                                // this is the callback if something goes wrong with the event registration or processing
+                                                if (retries >= MAX_RETRIES_EVENT_HUB) {
+                                                    logger.info(`The event hub was disconnected, retrying (attempt: ${retries})`);
+                                                    setTimeout(startListening, 0);
+                                                } else {
+                                                    txPromiseReject(new Error(`There was a problem with the eventhub: ${err} `));
+                                                }
+                                                retries += 1;
                                             }
-                                        }, (err) => {
-                                            // this is the callback if something goes wrong with the event registration or processing
-                                            if (retries >= MAX_RETRIES_EVENT_HUB) {
-                                                logger.info(`The event hub was disconnected, retrying (attempt: ${retries})`);
-                                                setTimeout(startListening, 0);
-                                            } else {
-                                                txPromiseReject(new Error(`There was a problem with the eventhub: ${err} `));
-                                            }
-                                            retries += 1;
-                                        });
+                                        );
                                     };
                                     startListening();
                                 })
@@ -167,12 +184,18 @@ module.exports = function invoke({
                         promises.push(txPromise);
 
                         return Promise.all(promises);
-                    });
+                    };
+                    if (!isGrpcs(peerForListening.url)) {
+                        return waitForTransactionCompleted();
+                    }
+                    const {certPath, certOptions} = peerForListening;
+                    return loadCert(certPath, certOptions).then(waitForTransactionCompleted);
                 }
 
                 throw proposalError ||
-                    new Error(transactionProposalResponse || 'Failed to send Proposal or receive valid response. ' +
-                    'Response null or status is not 200. exiting...');
+                    new Error(transactionProposalResponse ||
+                            'Failed to send Proposal or receive valid response. ' +
+                                'Response null or status is not 200. exiting...');
             })
             .then((results) => {
                 logger.info('Send transaction promise and event listener promise have completed');
@@ -184,16 +207,18 @@ module.exports = function invoke({
                     logger.info('Successfully sent transaction to the orderer.');
                     transactionSucceeded = true;
                 } else {
-                    logger.error(`Failed to order the transaction.Error code: ${results.status} `);
-                    errors.push(`Failed to order the transaction.Error code: ${results.status} `);
+                    const message = `Failed to order the transaction.Error code: ${results.status}`;
+                    logger.error(message);
+                    errors.push(message);
                 }
 
                 if (results && results[1] && results[1].event_status === 'VALID') {
                     logger.info('Successfully committed the change to the ledger by the peer');
                     commitSucceeded = true;
                 } else {
-                    logger.info(`Transaction failed to be committed to the ledger due to: ${results[1].event_status}.`);
-                    errors.push(`Transaction failed to be committed to the ledger due to: ${results[1].event_status}.`);
+                    const message = `Transaction failed to be committed to the ledger due to: ${results[1].event_status}`;
+                    logger.info(message);
+                    errors.push(message);
                 }
 
                 if (transactionSucceeded && commitSucceeded) {

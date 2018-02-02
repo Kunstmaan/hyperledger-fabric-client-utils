@@ -10,7 +10,7 @@ module.exports = function setUserContext(fabricClient, userId) {
             if (userFromStore && userFromStore.isEnrolled()) {
                 logger.info(`Successfully loaded ${userId} from persistence`);
             } else {
-                throw new Error(`Failed to get ${userId}.... run registerUser.js`);
+                throw new Error(`Unable to load ${userId} as it's not been registered`);
             }
 
             return userFromStore;

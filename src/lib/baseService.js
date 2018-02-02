@@ -1,5 +1,5 @@
-const invoke = require('../invoke');
-const query = require('../query');
+const invoke = require('./invoke');
+const query = require('./query');
 const logger = require('../logging/logger').getLogger('services/baseService');
 
 module.exports = (
