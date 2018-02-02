@@ -2,6 +2,14 @@
 
 This repository consists out of a set of utility functions which can be used to interact with chaincode on a Hyperledger Fabric blockchain network.
 
+1. [API](#api)
+    + [createFabricClient](#createfabricclient)
+    + [baseService](#baseservice)
+    + [query](#query)
+    + [invoke](#invoke)
+    + [registerChaincodeEventListener](#registerchaincodeeventlistener)
+2. [Run tests](#run-tests)
+
 ## API
 
 ### createFabricClient
@@ -18,7 +26,6 @@ const {createFabricClient} = require('@kunstmaan/hyperledger-fabric-client-utils
 const keyStorePath = './node_modules/@kunstmaan/hyperledger-fabric-chaincode-dev-setup/dev-network/generated/hfc-key-store';
 const fabricClient = await createFabricClient(keyStorePath);
 ```
-
 
 ### baseService
 
@@ -120,6 +127,7 @@ Query the chaincode on the network.
 const {query, createFabricClient} = require('@kunstmaan/hyperledger-fabric-client-utils');
 
 const keyStorePath = './node_modules/@kunstmaan/hyperledger-fabric-chaincode-dev-setup/dev-network/generated/hfc-key-store';
+
 /**
  * Always create a new instance of the fabric client when executing a query
  */
@@ -171,6 +179,7 @@ Invoke chaincode on the network (create a new block).
 const {invoke, createFabricClient} = require('@kunstmaan/hyperledger-fabric-client-utils');
 
 const keyStorePath = './node_modules/@kunstmaan/hyperledger-fabric-chaincode-dev-setup/dev-network/generated/hfc-key-store';
+
 /**
  * Always create a new instance of the fabric client when executing an invoke
  */
@@ -247,8 +256,9 @@ Listen to events on the network
 const {registerChaincodeEventListener, createFabricClient} = require('@kunstmaan/hyperledger-fabric-client-utils');
 
 const keyStorePath = './node_modules/@kunstmaan/hyperledger-fabric-chaincode-dev-setup/dev-network/generated/hfc-key-store';
+
 /**
- * Always create a new instance of the fabric client when executing an invoke
+ * Always create a new instance of the fabric client when creating an event listener
  */
 const fabricClient = await createFabricClient(keyStorePath);
 
