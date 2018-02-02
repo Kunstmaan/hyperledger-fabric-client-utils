@@ -4,8 +4,8 @@
   "description": "Client utilities for communicating with chaincode  Hyperledger Fabric.",
   "main": "./src/index.js",
   "scripts": {
-    "lint": "eslint src/",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint .",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -23,9 +23,12 @@
   },
   "homepage": "https://github.com/Kunstmaan/hyperledger-fabric-client-utils#readme",
   "devDependencies": {
+    "@kunstmaan/hyperledger-fabric-chaincode-dev-setup": "^0.2.0",
     "eslint": "^4.16.0",
     "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.8.0"
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jest": "^21.7.0",
+    "jest": "^22.1.4"
   },
   "dependencies": {
     "fabric-client": "^1.1.0-preview",

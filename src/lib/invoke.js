@@ -37,7 +37,7 @@ module.exports = function invoke({
         let channel = null;
         let transactionProposalResponse = null;
         Promise.resolve()
-            .then(createChannel({
+            .then(() => createChannel({
                 fabricClient,
                 channelId,
                 peers,
@@ -56,7 +56,9 @@ module.exports = function invoke({
                 const request = {
                     chaincodeId: chaincode.id,
                     fcn: chaincode.fcn,
-                    args: dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined'),
+                    args: chaincode.args
+                        ? dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined')
+                        : [],
                     txId
                 };
 

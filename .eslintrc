@@ -2,7 +2,8 @@
     "root": true,
     "env": {
         "browser": true,
-        "es6": true
+        "es6": true,
+        "jest/globals": true
     },
     "parserOptions": {
         "sourceType": "module",
@@ -11,13 +12,16 @@
             "modules": true
         }
     },
+    "plugins": [
+        "jest"
+    ],
     "extends": "airbnb-base",
     "rules": {
         "arrow-body-style": "off",
         "arrow-parens": ["error", "always"],
         "comma-dangle": ["error", "never"],
         "default-case": "off",
-        "indent": ["error", 4, { "SwitchCase": 1 }],
+        "indent": ["error", 4, {"SwitchCase": 1}],
         "max-len": ["error", 120, {"ignoreComments": true, "ignoreTemplateLiterals": true}],
         "no-console": 0,
         "no-trailing-spaces": ["error"],
@@ -26,15 +30,23 @@
         "quotes": ["error", "single"],
         "semi": ["error", "always"],
         "space-before-blocks": ["error", "always"],
-        "space-before-function-paren": ["error", {
-            "anonymous": "never",
-            "named": "never",
-            "asyncArrow": "always"
-        }],
+        "space-before-function-paren": [
+            "error",
+            {
+                "anonymous": "never",
+                "named": "never",
+                "asyncArrow": "always"
+            }
+        ],
         "import/prefer-default-export": "off",
         "func-names": "off",
         "no-restricted-syntax": "off",
-        "no-await-in-loop": "off"
+        "no-await-in-loop": "off",
+        "jest/no-disabled-tests": "warn",
+        "jest/no-focused-tests": "error",
+        "jest/no-identical-title": "error",
+        "jest/prefer-to-have-length": "warn",
+        "jest/valid-expect": "error"
     },
     "globals": {"module": true}
 }
