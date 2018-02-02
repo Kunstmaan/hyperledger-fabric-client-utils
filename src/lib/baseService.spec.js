@@ -41,15 +41,17 @@ test('Can create a car from the base Service', async () => {
         }
     );
 
+    const randomId = `CAR${Math.floor(Math.random() * 1000000)}`;
+
     await service.createCar(defaultUserId, {
-        id: 'CAR6666',
+        id: randomId,
         color: 'Black',
         make: 'Porsche',
         model: 'Cayenne',
         owner: 'Ronny'
     });
 
-    const newCar = await service.queryCar(defaultUserId, 'CAR6666');
+    const newCar = await service.queryCar(defaultUserId, randomId);
     expect(newCar).toEqual({
         color: 'Black',
         make: 'Porsche',

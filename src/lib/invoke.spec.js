@@ -9,6 +9,7 @@ const {
 beforeAll(testSetup);
 
 test('Can create a car', async () => {
+    const randomId = `CAR${Math.floor(Math.random() * 1000000)}`;
     const fabricClient = await createFabricClient(keyStorePath);
     await invoke({
         fabricClient,
@@ -16,7 +17,7 @@ test('Can create a car', async () => {
         chaincode: {
             id: chaincodeId,
             fcn: 'createCar',
-            args: ['CAR666', 'Porsche', 'Cayenne', 'Black', 'Ronny']
+            args: [randomId, 'Porsche', 'Cayenne', 'Black', 'Ronny']
         },
         peers: [peer],
         orderer,
@@ -29,7 +30,7 @@ test('Can create a car', async () => {
         chaincode: {
             id: chaincodeId,
             fcn: 'queryCar',
-            args: ['CAR666']
+            args: [randomId]
         },
         peer,
         userId
