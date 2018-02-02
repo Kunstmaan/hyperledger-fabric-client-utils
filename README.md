@@ -102,7 +102,7 @@ const service = baseService(
     }
 );
 
-await service.createCar(defaultUserId, {
+await service.createCar('user-1', {
     id: 'CAR1000',
     color: 'Black',
     make: 'Porsche',
@@ -110,7 +110,7 @@ await service.createCar(defaultUserId, {
     owner: 'Ronny'
 });
 
-const newCar = await service.queryCar(defaultUserId, randomId);
+const newCar = await service.queryCar('user-1', 'CAR1000');
 ```
 
 ### query
