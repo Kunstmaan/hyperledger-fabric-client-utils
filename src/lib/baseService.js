@@ -1,8 +1,10 @@
 const invoke = require('./invoke');
 const query = require('./query');
 const logger = require('../logging/logger').getLogger('services/baseService');
+const createFabricClient = require('./createFabricClient');
 
 module.exports = (
+    keyStorePath,
     chaincodeId,
     getServices = () => {},
     {
@@ -24,10 +26,12 @@ module.exports = (
     };
 
     const services = getServices(
-        ({
+        async ({
             chaincode, channelId = defaultChannelId, peer = defaultPeers[0], userId
         }) => {
+            const fabricClient = await createFabricClient(keyStorePath);
             const options = {
+                fabricClient,
                 chaincode: setChaincodeOption(chaincode),
                 channelId,
                 peer,
@@ -36,10 +40,12 @@ module.exports = (
             logger.info(`Query options: ${JSON.stringify(options)}`);
             return query(options);
         },
-        ({
+        async ({
             chaincode, channelId = defaultChannelId, peers = defaultPeers, orderer = defaultOrderer, userId
         }) => {
+            const fabricClient = await createFabricClient(keyStorePath);
             const options = {
+                fabricClient,
                 chaincode: setChaincodeOption(chaincode),
                 channelId,
                 peers,
