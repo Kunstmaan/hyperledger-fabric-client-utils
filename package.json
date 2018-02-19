@@ -5,7 +5,7 @@
   "main": "./src/index.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "jest",
+    "test": "jest --runInBand",
     "start-dev-network": "node test/startDevNetwork.js"
   },
   "repository": {

@@ -10,9 +10,20 @@ module.exports = function createChannel({
 }) {
     const ordererUrl = orderer ? orderer.url : undefined;
 
+    const peersMap = {};
+    (peers || []).forEach((peer) => {
+        const peerUrl = new URL(peer.url);
+        peersMap[peerUrl.host.toLowerCase()] = peer;
+    });
+    const uniquePeers = Object.values(peersMap);
+
+    if (uniquePeers.length === 0) {
+        return Promise.reject(new Error('No peers provided.'));
+    }
+
     const channel = fabricClient.newChannel(channelId);
 
-    const registerPeersCertOnChannel = () => Promise.all(peers.map((peer) => {
+    const registerPeersCertOnChannel = () => Promise.all(uniquePeers.map((peer) => {
         return new Promise((resolve, reject) => {
             if (!isGrpcs(peer.url)) {
                 channel.addPeer(fabricClient.newPeer(peer.url));

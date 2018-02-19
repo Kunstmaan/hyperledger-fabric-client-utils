@@ -256,7 +256,7 @@ const keyStorePath = './node_modules/@kunstmaan/hyperledger-fabric-chaincode-dev
  */
 const fabricClient = await createFabricClient(keyStorePath);
 
-await registerChaincodeEventListener({
+const eventListener = await registerChaincodeEventListener({
     fabricClient,
     chaincode: 'fabcar1',
     channelId: 'defaultchannel',
@@ -281,19 +281,6 @@ await registerChaincodeEventListener({
             'ssl-target-name-override': "peer.org1.example.be"
         }
     },
-    orderer: {
-        url: 'grpc://localhost:7050',
-        /**
-         * Path to the certificate, you only need to specify this when using the grpcs protocol
-         */
-        certPath: './node_modules/@kunstmaan/hyperledger-fabric-chaincode-dev-setup/dev-network/generated/crypto-config/org1.example.be/orderers/orderer.org1.example.be/tlsca.combined.orderer.org1.example.be-cert.pem',
-        /**
-         * Extra options to pass to the grpc module, you only need to specify this when using the grpcs protocol
-         */
-        certOptions: {
-            'ssl-target-name-override': "peer.org1.example.be"
-        }
-    },
     /**
      * User which is doing the transaction (used for loading the correct public/private key inside the keystore path)
      */
@@ -311,10 +298,13 @@ await registerChaincodeEventListener({
     /**
      * Called when the listener gets disconnected
      */
-    onDisconnect: () => {
-        console.log('disconnected');
+    onDisconnect: (error, eventId) => {
+        console.log('Listener disconnected due to an error', error, eventId);
     }
 });
+
+// Stop listening for events
+eventListener.stopListening()
 ```
 
 ## Run tests

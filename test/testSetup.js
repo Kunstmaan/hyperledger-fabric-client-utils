@@ -26,7 +26,7 @@ async function initLedger() {
 }
 
 module.exports = async function setup(done) {
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 5 * 60000; // 5min
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 30000; // 30sec
 
     await initLedger();
     done();
