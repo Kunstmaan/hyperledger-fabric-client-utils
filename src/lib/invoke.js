@@ -40,7 +40,7 @@ module.exports = function invoke({
             .then(() => createChannel({
                 fabricClient,
                 channelId,
-                peers,
+                peers: uniquePeers,
                 orderer
             }))
             .then((_channel) => {
