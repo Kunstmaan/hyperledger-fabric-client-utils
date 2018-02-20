@@ -75,26 +75,41 @@ module.exports = function invoke({
                 let proposalError;
                 const proposalResponses = results[0];
                 const proposal = results[1];
-                let isProposalGood = false;
-                if (proposalResponses && proposalResponses[0].response) {
-                    const payload = proposalResponses[0].response.payload.toString();
-                    try {
-                        transactionProposalResponse = JSON.parse(payload);
-                    } catch (e) {
-                        // Not a json object
-                        transactionProposalResponse = payload;
-                    }
-                    if (proposalResponses[0].response.status === 200) {
-                        isProposalGood = true;
-                        logger.info('Transaction proposal was good');
+                let isProposalGood = proposalResponses.every((proposalResponse) => {
+                    if (proposalResponses && proposalResponse.response) {
+                        const payload = proposalResponse.response.payload.toString();
+                        try {
+                            transactionProposalResponse = JSON.parse(payload);
+                        } catch (e) {
+                            // Not a json object
+                            transactionProposalResponse = payload;
+                        }
+                        if (proposalResponse.response.status === 200) {
+                            logger.info('Transaction proposal was good');
+
+                            return true;
+                        } else {
+                            logger.error('Transaction proposal was bad');
+                        }
+                    } else if (proposalResponses && proposalResponse.message) {
+                        proposalError = parseErrorMessage(proposalResponse.message);
+                        logger.error('Transaction proposal was bad');
                     } else {
                         logger.error('Transaction proposal was bad');
                     }
-                } else if (proposalResponses && proposalResponses[0].message) {
-                    proposalError = parseErrorMessage(proposalResponses[0].message);
-                    logger.error('Transaction proposal was bad');
-                } else {
-                    logger.error('Transaction proposal was bad');
+
+                    return false;
+                });
+
+                if (!channel.compareProposalResponseResults(proposalResponses)) {
+                    logger.error('Proposal responses are not equal');
+
+                    proposalResponses.forEach((proposalResponse) => {
+                        const proposalPayload = proposalResponse.payload.toString();
+                        logger.info(proposalPayload);
+                    });
+
+                    isProposalGood = false;
                 }
 
                 if (isProposalGood) {
