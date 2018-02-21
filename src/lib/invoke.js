@@ -49,22 +49,23 @@ module.exports = function invoke({
             .then(() => {
                 // get a transaction id object based on the current user assigned to fabric client
                 txId = fabricClient.newTransactionID();
-                // eslint-disable-next-line no-underscore-dangle
-                logger.info('Assigning transaction_id: ', txId._transaction_id);
+
+                const chaincodeArgs = chaincode.args
+                    ? dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined')
+                    : [];
 
                 const request = {
                     chaincodeId: chaincode.id,
                     fcn: chaincode.fcn,
-                    args: chaincode.args
-                        ? dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined')
-                        : [],
+                    args: chaincodeArgs,
                     txId
                 };
 
+                logger.info(`Invoking ${chaincode.fcn} on chaincode ${chaincode.id}/${channelId}`);
+                logger.info(`- transaction id: ${txId._transaction_id}`); // eslint-disable-line
+                logger.info(`- arguments: ${JSON.stringify(chaincodeArgs)}`);
                 if (uniquePeers && uniquePeers.length > 0) {
-                    logger.info(`Sending transaction proposal to following endorser peers: ${uniquePeers
-                        .map((uniquePeer) => uniquePeer.url)
-                        .join(', ')}`);
+                    logger.info(`- endorsed by: ${uniquePeers.map((peer) => peer.url).join(', ')}`);
                 }
 
                 // send the transaction proposal to the peers
