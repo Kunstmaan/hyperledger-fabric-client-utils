@@ -63,7 +63,7 @@ module.exports = function invoke({
 
                 logger.info(`Invoking ${chaincode.fcn} on chaincode ${chaincode.id}/${channelId}`);
                 logger.info(`- transaction id: ${txId._transaction_id}`); // eslint-disable-line
-                logger.info(`- arguments: ${JSON.stringify(chaincodeArgs)}`);
+                logger.debug(`- arguments: ${JSON.stringify(chaincodeArgs)}`); // only print this when debugging ... can be large
                 if (uniquePeers && uniquePeers.length > 0) {
                     logger.info(`- endorsed by: ${uniquePeers.map((peer) => peer.url).join(', ')}`);
                 }
@@ -207,10 +207,12 @@ module.exports = function invoke({
 
                     promises.push(txPromise);
 
-                    return {
-                        transactionProposalResponse,
-                        results: Promise.all(promises)
-                    };
+                    return Promise.all(promises).then((endorsementResults) => {
+                        return {
+                            transactionProposalResponse,
+                            results: endorsementResults
+                        };
+                    });
                 };
 
                 if (!isGrpcs(peerForListening.url)) {
