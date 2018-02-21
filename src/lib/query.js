@@ -23,13 +23,18 @@ module.exports = function query({
             })
             .then(() => setUserContext(fabricClient, userId))
             .then(() => {
+                const chaincodeArgs = chaincode.args
+                    ? dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined')
+                    : [];
+
                 const request = {
                     chaincodeId: chaincode.id,
                     fcn: chaincode.fcn,
-                    args: chaincode.args
-                        ? dropRightWhile(chaincode.args.map(serializeArg), (arg) => typeof arg === 'undefined')
-                        : []
+                    args: chaincodeArgs
                 };
+
+                logger.info(`Querying ${chaincode.fcn} on chaincode ${chaincode.id}/${channelId}`);
+                logger.info(`- arguments: ${JSON.stringify(chaincodeArgs)}`);
 
                 // send the query proposal to the peer
                 return channel.queryByChaincode(request);
