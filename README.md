@@ -2,13 +2,18 @@
 
 This repository consists out of a set of utility functions which can be used to interact with chaincode on a Hyperledger Fabric blockchain network.
 
-1. [API](#api)
+1. [Supported Hyperledger Fabric versions](#supported-hyperledger-fabric-versions)
+2. [API](#api)
     + [createFabricClient](#createfabricclient)
     + [baseService](#baseservice)
     + [query](#query)
     + [invoke](#invoke)
     + [registerChaincodeEventListener](#registerchaincodeeventlistener)
-2. [Run tests](#run-tests)
+3. [Run tests](#run-tests)
+
+## Supported Hyperledger Fabric versions
+
+This library has only been tested against the [v1.1.0-alpha](https://github.com/hyperledger/fabric/releases/tag/v1.1.0-alpha) version of Hyperledger.
 
 ## API
 
@@ -312,5 +317,5 @@ eventListener.stopListening()
 1. Make sure you have installed Docker and Python
 2. Make sure you have added the path of the repo to the Docker file sharing preferences
 3. Run `npm install`
-3. Run `npm start-dev-network` and wait for all chaincode to be instantiated
-4. Open a new terminal and run `npm test`
+3. Run `npm run start-dev-network` and wait for all chaincode to be instantiated
+4. Open a new terminal and run `npm test` (to run in watch mode use `npm run test-watch`)
