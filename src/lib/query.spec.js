@@ -21,6 +21,31 @@ test('Can query a car', async () => {
         userId
     });
     expect(result).toEqual({
-        color: 'brown', make: 'Holden', model: 'Barina', owner: 'Shotaro'
+        color: 'brown',
+        make: 'Holden',
+        model: 'Barina',
+        owner: 'Shotaro'
     });
+});
+
+test('Querying a car that does not exists fails', async () => {
+    const fabricClient = await createFabricClient(keyStorePath);
+
+    try {
+        await query({
+            fabricClient,
+            channelId,
+            chaincode: {
+                id: chaincodeId,
+                fcn: 'queryCar',
+                args: ['DOES_NOT_EXIST']
+            },
+            peer,
+            userId
+        });
+        expect('Should have thrown an error').toBeFalsy();
+    } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toBe('DOES_NOT_EXIST does not exist: ');
+    }
 });
