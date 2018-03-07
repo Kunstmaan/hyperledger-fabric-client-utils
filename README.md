@@ -1,4 +1,4 @@
-# Hyperledger Fabric Client utils
+# Hyperledger Fabric Client utils [![npm version](https://badge.fury.io/js/%40kunstmaan%2Fhyperledger-fabric-client-utils.svg)](https://badge.fury.io/js/%40kunstmaan%2Fhyperledger-fabric-client-utils)
 
 This repository consists out of a set of utility functions which can be used to interact with chaincode on a Hyperledger Fabric blockchain network.
 
