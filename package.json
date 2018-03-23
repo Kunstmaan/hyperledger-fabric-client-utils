@@ -1,12 +1,13 @@
 {
   "name": "@kunstmaan/hyperledger-fabric-client-utils",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Client utilities for communicating with chaincode on a Hyperledger Fabric blockchain network.",
   "main": "./src/index.js",
   "scripts": {
     "lint": "eslint .",
     "test": "jest --runInBand",
-    "start-dev-network": "node test/startDevNetwork.js"
+    "start-dev-network": "node test/startDevNetwork.js",
+    "test-watch": "jest --watch --runInBand"
   },
   "repository": {
     "type": "git",

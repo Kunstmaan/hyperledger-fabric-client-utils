@@ -78,7 +78,7 @@ module.exports = function invoke({
 
                 // validate each proposal response separatly
                 proposalResponses.forEach((proposalResponse, index) => {
-                    let errorMessage;
+                    let error;
                     if (proposalResponses && proposalResponse.response) {
                         const payload = proposalResponse.response.payload.toString();
 
@@ -95,15 +95,15 @@ module.exports = function invoke({
                             return;
                         }
 
-                        errorMessage = `status: ${proposalResponse.response.status}, payload: "${payload}"`;
+                        error = new Error(`status: ${proposalResponse.response.status}, payload: "${payload}"`);
                     } else if (proposalResponses && proposalResponse.message) {
-                        errorMessage = `error message: "${parseErrorMessage(proposalResponse.message)}"`;
+                        error = parseErrorMessage(proposalResponse.message);
                     } else {
-                        errorMessage = 'invalid response';
+                        error = new Error('invalid response');
                     }
 
-                    logger.error(`Transaction proposal ${index} was bad, ${errorMessage}`);
-                    throw new Error(`Transaction proposal ${index} was bad, ${errorMessage}`);
+                    logger.error(`Transaction proposal ${index} was bad, ${error.message}`);
+                    throw error;
                 });
 
                 // check if proposal responses are equal
