@@ -32,7 +32,7 @@
     "jest": "^22.1.4"
   },
   "dependencies": {
-    "fabric-client": "^1.1.0-preview",
+    "fabric-client": "^1.1.0",
     "lodash.droprightwhile": "^4.6.0",
     "log4js": "^2.5.2"
   }
