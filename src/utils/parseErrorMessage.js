@@ -1,13 +1,24 @@
 const logger = require('../logging/logger').getLogger('fabric/parseErrorMessage');
 
-const INVOKE_REGEX = /^.*?Calling\s+chaincode\s+Invoke\(\)\s+returned\s+error\s+response\s+(.*)\..*?$/i;
+const ERROR_REGEX_COLLECTION = [
+    /^.*?Calling\s+chaincode\s+Invoke\(\)\s+returned\s+error\s+response\s+(.*)\..*?$/i, // Invoke
+    /^.*?error\s+executing\s+chaincode:\s+transaction\s+returned\s+with\s+failure:\s+(.*?)$/i // Query
+];
 const DEFAULT_ERROR_REGEX = /^\[Error:\s+(.*?)\]$/i;
 
 module.exports = function parseErrorMessage(message) {
     try {
-        if (INVOKE_REGEX.test(message)) {
-            const errorMessageMatch = message.match(INVOKE_REGEX)[1];
+        const errorMessageMatches = ERROR_REGEX_COLLECTION.map((ERROR_REGEX) => {
+            const normalizedMessage = message.replace(/\n/gm, ' ');
+            if (ERROR_REGEX.test(normalizedMessage)) {
+                return normalizedMessage.match(ERROR_REGEX)[1];
+            }
+            return undefined;
+        }).filter((item) => !!item);
 
+
+        if (errorMessageMatches.length > 0) {
+            const errorMessageMatch = errorMessageMatches[0];
             try {
                 const errorResponse = JSON.parse(errorMessageMatch);
                 const errorObject = Array.isArray(errorResponse) ? errorResponse[0] : errorResponse;

@@ -46,6 +46,6 @@ test('Querying a car that does not exists fails', async () => {
         expect('Should have thrown an error').toBeFalsy();
     } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        expect(error.message).toBe('DOES_NOT_EXIST does not exist: ');
+        expect(error.message).toBe('Error: DOES_NOT_EXIST does not exist: ');
     }
 });

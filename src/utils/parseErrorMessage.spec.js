@@ -13,7 +13,7 @@ test('Parses an error string with a custom error object correctly', () => {
     expect(error.data).toEqual({property: 'bondData'});
 });
 
-test('Parses an error string with a custom error object and no message correctly', () => {
+test('Parses an error string with a custom error object and no message correctly (invoke)', () => {
     const message =
         'error executing chaincode: transaction returned with failure: ' +
         '[clientchannel-797e3444]Calling chaincode Invoke() returned error response ' +
@@ -23,6 +23,19 @@ test('Parses an error string with a custom error object and no message correctly
     expect(error.message).toBe('Unknown error');
     expect(error.key).toBe('invalid_data');
     expect(error.data).toEqual({property: 'bondData'});
+});
+
+test('Parses an error string with a custom error object and no message correctly (query)', () => {
+    const message =
+        '2 UNKNOWN: error executing chaincode: transaction returned with failure: ' +
+        '{"key":"unknown_entity","data":{"property":"bondId","value":"0068E00000CqlVHQAZ"},' +
+        '"stack":"Error: unknown_entity\n    at getBondHelper (/opt/gopath/src/chaincode/bond/chaincode.js:471:15)\n' +
+        '    at <anonymous>\n    at process._tickCallback (internal/process/next_tick.js:188:7)"}';
+    const error = parseErrorMessage(message);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.message).toBe('Unknown error');
+    expect(error.key).toBe('unknown_entity');
+    expect(error.data).toEqual({property: 'bondId', value: '0068E00000CqlVHQAZ'});
 });
 
 test('Parses an error string with a default error object correctly', () => {

@@ -63,6 +63,6 @@ test('Creating a car with an incorrect number of arguments fails', async () => {
         expect('Should have thrown an error').toBeFalsy();
     } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        expect(error.message).toBe('Incorrect number of arguments. Expecting 5');
+        expect(error.message).toBe('Error: Incorrect number of arguments. Expecting 5');
     }
 });
