@@ -253,7 +253,7 @@ module.exports = function invoke({
                 }
             })
             .catch((err) => {
-                logger.error(`Failed to invoke successfully: ${JSON.stringify(err)}`);
+                logger.error(`Failed to invoke successfully: ${err}`);
                 reject(err);
             });
     });
