@@ -8,6 +8,9 @@ module.exports.getLogger = (name) => {
     let loglevel = 'info';
     if (typeof level === 'string') {
         switch (level.toUpperCase()) {
+            case 'OFF':
+                loglevel = 'off';
+                break;
             case 'CRITICAL':
                 loglevel = 'fatal';
                 break;
