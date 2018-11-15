@@ -13,7 +13,7 @@ This repository consists out of a set of utility functions which can be used to 
 
 ## Supported Hyperledger Fabric versions
 
-This library has only been tested against the [v1.1.0](https://github.com/hyperledger/fabric/releases/tag/v1.1.0) version of Hyperledger.
+This library has only been tested against the [v1.3.0](https://github.com/hyperledger/fabric/releases/tag/v1.3.0) version of Hyperledger.
 
 ## API
 
