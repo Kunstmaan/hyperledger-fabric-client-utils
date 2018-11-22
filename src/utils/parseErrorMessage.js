@@ -1,4 +1,4 @@
-const logger = require('../logging/logger').getLogger('fabric/parseErrorMessage');
+const logger = require('./logger').getLogger('fabric/parseErrorMessage');
 
 const ERROR_REGEX_COLLECTION = [
     /^.*?Calling\s+chaincode\s+Invoke\(\)\s+returned\s+error\s+response\s+(.*)\..*?$/i, // Invoke

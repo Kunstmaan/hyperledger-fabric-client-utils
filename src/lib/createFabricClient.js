@@ -1,5 +1,5 @@
 const FabricClient = require('fabric-client');
-const logger = require('../logging/logger').getLogger('lib/createFabricClient');
+const logger = require('../utils/logger').getLogger('lib/createFabricClient');
 
 module.exports = function createFabricClient(keyStorePath) {
     const fabricClient = new FabricClient();

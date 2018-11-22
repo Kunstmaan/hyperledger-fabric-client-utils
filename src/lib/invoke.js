@@ -5,9 +5,10 @@ const loadCert = require('../utils/loadCert');
 const setUserContext = require('../utils/setUserContext');
 const serializeArg = require('../utils/serializeArg');
 const parseErrorMessage = require('../utils/parseErrorMessage');
-const logger = require('../logging/logger').getLogger('lib/invoke');
+const logger = require('../utils/logger').getLogger('lib/invoke');
 const isGrpcs = require('../utils/isGrpcs');
 const createChannel = require('../utils/createChannel');
+const registerEventListener = require('../utils/registerEventListener');
 
 const MAX_RETRIES_EVENT_HUB = 5;
 const MAX_TIMEOUT = 30000;
@@ -121,7 +122,7 @@ module.exports = function invoke({
                 }
 
                 const peerForListening = uniquePeers[0];
-                const waitForTransactionCompleted = (peerCertOptions) => {
+                const waitForTransactionCompleted = () => {
                     logger.info(util.format(
                         'Successfully sent Proposal and received ProposalResponse: Status - %s, message - "%s"',
                         proposalResponses[0].response.status,
@@ -143,11 +144,6 @@ module.exports = function invoke({
                     const sendPromise = channel.sendTransaction(request);
                     promises.push(sendPromise); // we want the send transaction first, so that we know where to check status
 
-                    // get an eventhub once the fabric client has a user assigned. The user
-                    // is required bacause the event registration must be signed
-                    const eventHub = fabricClient.newEventHub();
-                    eventHub.setPeerAddr(peerForListening.broadcastUrl, peerCertOptions);
-
                     // using resolve the promise so that result status may be processed
                     // under the then clause rather than having the catch clause process
                     // the status
@@ -158,49 +154,42 @@ module.exports = function invoke({
                         // See https://jira.hyperledger.org/browse/FAB-6101
                         setUserContext(fabricClient, peerForListening.adminUserId)
                             .then(() => {
-                                const handle = setTimeout(() => {
-                                    eventHub.disconnect();
+                                let handle = () => {};
+
+                                const eventListener = registerEventListener({
+                                    channel,
+                                    type: 'Tx',
+                                    args: [transactionIdString],
+                                    onEvent: (tx, code) => {
+                                        // this is the callback for transaction event status
+                                        // first some clean up of event listener
+                                        clearTimeout(handle);
+
+                                        // now let the application know what happened
+                                        const returnStatus = {event_status: code, tx_id: transactionIdString};
+                                        if (code !== 'VALID') {
+                                            logger.error(`The transaction was invalid, code = ${code}`);
+                                            txPromiseReject(new Error(returnStatus));
+                                        } else {
+                                            logger.info('The transaction has been committed on peer');
+                                            txPromiseResolve(returnStatus);
+                                        }
+                                    },
+                                    onDisconnect: (err, willReconnect) => {
+                                        if (!willReconnect) {
+                                            txPromiseReject(new Error(`There was a problem with the eventhub: ${err} `));
+                                        }
+                                    },
+                                    timeoutForReconnect: 0,
+                                    maxReconnects: MAX_RETRIES_EVENT_HUB,
+                                    disconnect: true
+                                });
+
+                                handle = setTimeout(() => {
+                                    eventListener.disconnect();
                                     const err = new Error('Transaction did not complete within the allowed time');
                                     txPromiseReject(err);
                                 }, maxTimeout);
-                                let retries = 0;
-                                const startListening = () => {
-                                    eventHub.connect();
-                                    eventHub.registerTxEvent(
-                                        transactionIdString,
-                                        (tx, code) => {
-                                            // this is the callback for transaction event status
-                                            // first some clean up of event listener
-                                            clearTimeout(handle);
-                                            eventHub.unregisterTxEvent(transactionIdString);
-                                            eventHub.disconnect();
-
-                                            // now let the application know what happened
-                                            const returnStatus = {event_status: code, tx_id: transactionIdString};
-                                            if (code !== 'VALID') {
-                                                logger.error(`The transaction was invalid, code = ${code}`);
-                                                txPromiseReject(new Error(returnStatus));
-                                            } else {
-                                                logger.info(`The transaction has been committed on peer ${
-                                                    // eslint-disable-next-line no-underscore-dangle
-                                                    eventHub._ep._endpoint.addr
-                                                }`);
-                                                txPromiseResolve(returnStatus);
-                                            }
-                                        },
-                                        (err) => {
-                                            // this is the callback if something goes wrong with the event registration or processing
-                                            if (retries >= MAX_RETRIES_EVENT_HUB) {
-                                                logger.info(`The event hub was disconnected, retrying (attempt: ${retries})`);
-                                                setTimeout(startListening, 0);
-                                            } else {
-                                                txPromiseReject(new Error(`There was a problem with the eventhub: ${err} `));
-                                            }
-                                            retries += 1;
-                                        }
-                                    );
-                                };
-                                startListening();
                             })
                             .catch((err) => txPromiseReject(err));
                     });

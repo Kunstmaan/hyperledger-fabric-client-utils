@@ -1,5 +1,5 @@
 const loadCert = require('../utils/loadCert');
-const logger = require('../logging/logger').getLogger('utils/createChannel');
+const logger = require('./logger').getLogger('utils/createChannel');
 const isGrpcs = require('../utils/isGrpcs');
 
 module.exports = function createChannel({

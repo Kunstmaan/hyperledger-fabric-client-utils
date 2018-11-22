@@ -1,5 +1,5 @@
 const loadCert = require('./loadCert');
-const isGrpcs = require('../utils/isGrpcs');
+const isGrpcs = require('./isGrpcs');
 
 module.exports = function createPeers(fabricClient, peers) {
     const createPeerPromises = [];

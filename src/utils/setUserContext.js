@@ -1,4 +1,4 @@
-const logger = require('../logging/logger').getLogger('fabric/setUserContext');
+const logger = require('./logger').getLogger('fabric/setUserContext');
 
 module.exports = function setUserContext(fabricClient, userId) {
     return Promise.resolve()
