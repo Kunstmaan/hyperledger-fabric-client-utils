@@ -154,7 +154,7 @@ module.exports = function invoke({
                         // See https://jira.hyperledger.org/browse/FAB-6101
                         setUserContext(fabricClient, peerForListening.adminUserId)
                             .then(() => {
-                                let handle = () => {};
+                                let handle = null;
 
                                 const eventListener = registerEventListener({
                                     channel,
@@ -163,7 +163,9 @@ module.exports = function invoke({
                                     onEvent: (tx, code) => {
                                         // this is the callback for transaction event status
                                         // first some clean up of event listener
-                                        clearTimeout(handle);
+                                        if (handle) {
+                                            clearTimeout(handle);
+                                        }
 
                                         // now let the application know what happened
                                         const returnStatus = {event_status: code, tx_id: transactionIdString};

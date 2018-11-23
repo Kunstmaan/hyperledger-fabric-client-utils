@@ -40,7 +40,12 @@ module.exports = async function registerChaincodeEventListener({
                 // filtered block events don't give the payload
                 let {payload} = event;
                 if (typeof payload !== 'undefined' && Buffer.isBuffer(payload)) {
-                    payload = JSON.parse(payload.toString('utf8'));
+                    try {
+                        payload = JSON.parse(payload.toString('utf8'));
+                    } catch (e) {
+                        // Not a json object
+                        payload = payload.toString('utf8');
+                    }
                     logger.info(`Event payload ${JSON.stringify(payload)}`);
                 }
                 onEvent(eventId, payload);
