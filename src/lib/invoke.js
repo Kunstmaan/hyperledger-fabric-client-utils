@@ -182,6 +182,7 @@ module.exports = function invoke({
                                     },
                                     timeoutForReconnect: 0,
                                     maxReconnects: MAX_RETRIES_EVENT_HUB,
+                                    fullBlock: true,
                                     disconnect: true
                                 });
 

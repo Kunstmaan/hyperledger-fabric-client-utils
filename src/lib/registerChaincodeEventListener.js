@@ -13,6 +13,8 @@ module.exports = async function registerChaincodeEventListener({
     onDisconnect,
     timeoutForReconnect,
     maxReconnects,
+    fullBlock,
+    signedEvent,
     startBlock,
     endBlock,
     unregister,
@@ -35,9 +37,13 @@ module.exports = async function registerChaincodeEventListener({
             if (event.event_name === eventId) {
                 logger.info(`Event received for ${eventId}`);
                 logger.debug(event);
-                const payload = JSON.parse(event.payload.toString('utf8'));
-                logger.info(`Event payload ${JSON.stringify(payload)}`);
-                onEvent(payload, eventId);
+                // filtered block events don't give the payload
+                let {payload} = event;
+                if (typeof payload !== 'undefined' && Buffer.isBuffer(payload)) {
+                    payload = JSON.parse(payload.toString('utf8'));
+                    logger.info(`Event payload ${JSON.stringify(payload)}`);
+                }
+                onEvent(eventId, payload);
             }
         },
         onDisconnect: (error) => {
@@ -45,6 +51,8 @@ module.exports = async function registerChaincodeEventListener({
         },
         timeoutForReconnect,
         maxReconnects,
+        fullBlock,
+        signedEvent,
         startBlock,
         endBlock,
         unregister,

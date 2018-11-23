@@ -9,6 +9,7 @@ const {
 beforeAll(testSetup);
 
 test('Can listen for an event when a car is created', async (done) => {
+    let shouldDisconnect = false;
     const fabricClientListener = await createFabricClient(keyStorePath);
     const listener = await registerChaincodeEventListener({
         fabricClient: fabricClientListener,
@@ -20,13 +21,14 @@ test('Can listen for an event when a car is created', async (done) => {
         /**
          * Callback when the event is triggered. Returns a payload which has the event data.
          */
-        onEvent: (payload) => {
+        onEvent: (eventId, payload) => {
             expect(payload).toEqual({
                 color: 'Gray',
                 make: 'Dacia',
                 model: 'Duster',
                 owner: 'Michel'
             });
+            shouldDisconnect = true;
             listener.stopListening();
             done();
         },
@@ -34,7 +36,9 @@ test('Can listen for an event when a car is created', async (done) => {
          * Called when the listener gets disconnected
          */
         onDisconnect: (error, eventId) => {
-            expect(`Should not have disconnected ${eventId} ${JSON.stringify(error)}`).toBeFalsy();
+            if (!shouldDisconnect) {
+                expect(`Should not have disconnected ${eventId} ${JSON.stringify(error)}`).toBeFalsy();
+            }
             done();
         }
     });
@@ -74,8 +78,7 @@ test('Stops listening for events when the stopListening method is called', async
         /**
          * Called when the listener gets disconnected
          */
-        onDisconnect: (error, eventId) => {
-            expect(`Should not have disconnected ${eventId} ${JSON.stringify(error)}`).toBeFalsy();
+        onDisconnect: () => {
             done();
         }
     });
@@ -99,7 +102,7 @@ test('Stops listening for events when the stopListening method is called', async
     });
 
     setTimeout(() => {
-        // Event was not called, test is fine
+        expect('Should have been disconnected').toBeFalsy();
         done();
     }, 30000);
 }, 60000);
