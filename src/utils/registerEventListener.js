@@ -10,7 +10,6 @@ module.exports = function registerEventListener({
     timeoutForReconnect = 10 * 1000, // every 10 seconds
     maxReconnects = undefined,
     fullBlock = true,
-    signedEvent = false,
     startBlock,
     endBlock,
     unregister,
@@ -26,8 +25,7 @@ module.exports = function registerEventListener({
 
         const startListening = () => {
             eventHub.connect({
-                full_block: fullBlock,
-                signedEvent
+                full_block: fullBlock
             });
             regId = eventHub[`register${type}Event`].apply(eventHub, [
                 ...args,
