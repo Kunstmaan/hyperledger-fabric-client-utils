@@ -1,6 +1,6 @@
 const logger = require('./logger').getLogger('utils/registerEventListener');
 
-module.exports = async function registerEventListener({
+module.exports = function registerEventListener({
     channel,
     peer,
     type,
