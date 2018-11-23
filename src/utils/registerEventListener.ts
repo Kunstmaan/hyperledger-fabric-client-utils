@@ -1,6 +1,8 @@
-const logger = require('./logger').getLogger('utils/registerEventListener');
+import getLogger  from './logger';
 
-module.exports = function registerEventListener({
+const logger = getLogger('utils/registerEventListener');
+
+export default function registerEventListener({
     channel,
     peer,
     type,

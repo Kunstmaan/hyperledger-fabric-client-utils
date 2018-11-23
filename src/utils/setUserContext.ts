@@ -1,6 +1,8 @@
-const logger = require('./logger').getLogger('fabric/setUserContext');
+import getLogger  from './logger';
 
-module.exports = function setUserContext(fabricClient, userId) {
+const logger = getLogger('fabric/setUserContext');
+
+export default function setUserContext(fabricClient, userId) {
     return Promise.resolve()
         .then(() => {
             // get the enrolled user from persistence, this user will sign all requests

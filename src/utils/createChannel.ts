@@ -1,8 +1,10 @@
-const loadCert = require('../utils/loadCert');
-const logger = require('./logger').getLogger('utils/createChannel');
-const isGrpcs = require('../utils/isGrpcs');
+import loadCert from '../utils/loadCert';
+import getLogger from './logger';
+import isGrpcs  from './isGrpcs';
 
-module.exports = function createChannel({
+const logger = getLogger('utils/createChannel');
+
+export default function createChannel({
     fabricClient,
     channelId,
     peers = [],
