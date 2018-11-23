@@ -1,6 +1,6 @@
-const createFabricClient = require('./createFabricClient');
-const invoke = require('./invoke');
-const query = require('./query');
+const createFabricClient = require('../../dist/lib/createFabricClient').default;
+const invoke = require('../../dist/lib/invoke').default;
+const query = require('../../dist/lib/query').default;
 const testSetup = require('../../test/testSetup');
 const {
     keyStorePath, channelId, peer, chaincodeId, userId, orderer

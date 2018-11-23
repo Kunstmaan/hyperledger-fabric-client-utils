@@ -1,19 +1,38 @@
-const util = require('util');
-const dropRightWhile = require('lodash.droprightwhile');
-const {URL} = require('url');
-const loadCert = require('../utils/loadCert');
-const setUserContext = require('../utils/setUserContext');
-const serializeArg = require('../utils/serializeArg');
-const parseErrorMessage = require('../utils/parseErrorMessage');
-const logger = require('../utils/logger').getLogger('lib/invoke');
-const isGrpcs = require('../utils/isGrpcs');
-const createChannel = require('../utils/createChannel');
-const registerEventListener = require('../utils/registerEventListener');
+import * as util from 'util';
+import dropRightWhileType from 'lodash.droprightwhile';
+import {URL} from 'url';
+import loadCert from '../utils/loadCert';
+import setUserContext from '../utils/setUserContext';
+import serializeArg from '../utils/serializeArg';
+import parseErrorMessage from '../utils/parseErrorMessage';
+import getLogger from '../utils/getLogger';
+import isGrpcs from '../utils/isGrpcs';
+import createChannel from '../utils/createChannel';
+import registerEventListener from '../utils/registerEventListener';
+import FabricClient from 'fabric-client';
+const dropRightWhile = require('lodash.droprightwhile') as typeof dropRightWhileType;
+
+interface Options {
+    fabricClient: FabricClient;
+    chaincode: Chaincode;
+    channelId: string;
+    peers?: Peer[];
+    orderer: Orderer;
+    userId: string;
+    maxTimeout?: number;
+}
+
+interface EndorsmentResult {
+    event_status: string;
+    tx_id: string;
+}
+
+const logger = getLogger('lib/invoke');
 
 const MAX_RETRIES_EVENT_HUB = 5;
 const MAX_TIMEOUT = 30000;
 
-module.exports = function invoke({
+export default function invoke({
     fabricClient,
     chaincode,
     channelId,
@@ -21,8 +40,8 @@ module.exports = function invoke({
     orderer,
     userId,
     maxTimeout = MAX_TIMEOUT
-}) {
-    const peersMap = {};
+}: Options) {
+    const peersMap: {[key: string]: Peer} = {};
     (peers || []).forEach((peer) => {
         const peerUrl = new URL(peer.url);
         peersMap[peerUrl.host.toLowerCase()] = peer;
@@ -34,8 +53,8 @@ module.exports = function invoke({
     }
 
     return new Promise((resolve, reject) => {
-        let txId = null;
-        let channel = null;
+        let txId: FabricClient.TransactionId = null;
+        let channel: FabricClient.Channel = null;
         Promise.resolve()
             .then(() => createChannel({
                 fabricClient,
@@ -63,7 +82,7 @@ module.exports = function invoke({
                 };
 
                 logger.info(`Invoking ${chaincode.fcn} on chaincode ${chaincode.id}/${channelId}`);
-                logger.info(`- transaction id: ${txId._transaction_id}`); // eslint-disable-line
+                logger.info(`- transaction id: ${txId.getTransactionID()}`);
                 logger.debug(`- arguments: ${JSON.stringify(chaincodeArgs)}`); // only print this when debugging ... can be large
                 if (uniquePeers && uniquePeers.length > 0) {
                     logger.info(`- endorsed by: ${uniquePeers.map((peer) => peer.url).join(', ')}`);
@@ -73,14 +92,14 @@ module.exports = function invoke({
                 return channel.sendTransactionProposal(request);
             })
             .then((results) => {
-                let transactionProposalResponse = null;
+                let transactionProposalResponse: string | object = null;
                 const proposalResponses = results[0];
                 const proposal = results[1];
 
                 // validate each proposal response separatly
-                proposalResponses.forEach((proposalResponse, index) => {
+                proposalResponses.forEach((proposalResponse: FabricClient.ProposalResponse & {message?: string}, index) => {
                     let error;
-                    if (proposalResponses && proposalResponse.response) {
+                    if (proposalResponse.response) {
                         const payload = proposalResponse.response.payload.toString();
 
                         try {
@@ -97,7 +116,7 @@ module.exports = function invoke({
                         }
 
                         error = new Error(`status: ${proposalResponse.response.status}, payload: "${payload}"`);
-                    } else if (proposalResponses && proposalResponse.message) {
+                    } else if (proposalResponse.message) {
                         error = parseErrorMessage(proposalResponse.message);
                     } else {
                         error = new Error('invalid response');
@@ -122,7 +141,10 @@ module.exports = function invoke({
                 }
 
                 const peerForListening = uniquePeers[0];
-                const waitForTransactionCompleted = () => {
+                const waitForTransactionCompleted = (): Promise<{
+                    transactionProposalResponse: string | object,
+                    results: [FabricClient.BroadcastResponse, EndorsmentResult]
+                }> => {
                     logger.info(util.format(
                         'Successfully sent Proposal and received ProposalResponse: Status - %s, message - "%s"',
                         proposalResponses[0].response.status,
@@ -139,28 +161,28 @@ module.exports = function invoke({
                     // if the transaction did not get committed within the timeout period,
                     // report a TIMEOUT status
                     const transactionIdString = txId.getTransactionID(); // Get the transaction ID string to be used by the event processing
-                    const promises = [];
 
                     const sendPromise = channel.sendTransaction(request);
-                    promises.push(sendPromise); // we want the send transaction first, so that we know where to check status
 
                     // using resolve the promise so that result status may be processed
                     // under the then clause rather than having the catch clause process
                     // the status
-                    const txPromise = new Promise((txPromiseResolve, txPromiseReject) => {
+                    const txPromise: Promise<EndorsmentResult> = new Promise((txPromiseResolve, txPromiseReject) => {
                         // In the next step we will setup an event listener to the network
                         // For this we need to use the admin user instead of the incoming user
                         // Otherwise we'll get a mismatch on the certificate
                         // See https://jira.hyperledger.org/browse/FAB-6101
                         setUserContext(fabricClient, peerForListening.adminUserId)
                             .then(() => {
-                                let handle = null;
+                                let handle: NodeJS.Timer = null;
 
+                                const peerForListeningInstance = channel.getPeers().find((item) => item.getUrl() === uniquePeers[0].url);
                                 const eventListener = registerEventListener({
                                     channel,
                                     type: 'Tx',
                                     args: [transactionIdString],
-                                    onEvent: (tx, code) => {
+                                    peer: peerForListeningInstance && peerForListeningInstance.getPeer(),
+                                    onEvent: ({code}) => {
                                         // this is the callback for transaction event status
                                         // first some clean up of event listener
                                         if (handle) {
@@ -168,10 +190,11 @@ module.exports = function invoke({
                                         }
 
                                         // now let the application know what happened
-                                        const returnStatus = {event_status: code, tx_id: transactionIdString};
+                                        const returnStatus: EndorsmentResult = {event_status: code, tx_id: transactionIdString};
                                         if (code !== 'VALID') {
-                                            logger.error(`The transaction was invalid, code = ${code}`);
-                                            txPromiseReject(new Error(returnStatus));
+                                            const errorMessage = `The transaction was invalid, code = ${code}`;
+                                            logger.error(errorMessage);
+                                            txPromiseReject(new Error(errorMessage));
                                         } else {
                                             logger.info('The transaction has been committed on peer');
                                             txPromiseResolve(returnStatus);
@@ -197,7 +220,10 @@ module.exports = function invoke({
                             .catch((err) => txPromiseReject(err));
                     });
 
-                    promises.push(txPromise);
+                    const promises: [Promise<FabricClient.BroadcastResponse>, Promise<EndorsmentResult>]  = [
+                        sendPromise,
+                        txPromise,
+                    ];
 
                     return Promise.all(promises).then((endorsementResults) => {
                         return {
@@ -224,11 +250,12 @@ module.exports = function invoke({
                     logger.info('Successfully sent transaction to the orderer.');
                     transactionSucceeded = true;
                 } else {
-                    const message = `Failed to order the transaction. Error code: ${results.status}`;
+                    const message = `Failed to order the transaction. Error code: ${results[0].status}`;
                     logger.error(message);
                     errors.push(message);
                 }
 
+                // TODO: this logic can be removed? already handled inside the previous step (txPromise)
                 if (results && results[1] && results[1].event_status === 'VALID') {
                     logger.info('Successfully committed the change to the ledger by the peer');
                     commitSucceeded = true;

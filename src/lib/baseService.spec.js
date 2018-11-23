@@ -1,4 +1,4 @@
-const baseService = require('./baseService');
+const baseService = require('../../dist/lib/baseService').default;
 const testSetup = require('../../test/testSetup');
 const {
     keyStorePath, channelId, peer, chaincodeId, orderer, userId: defaultUserId

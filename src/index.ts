@@ -1,10 +1,10 @@
-const baseService = require('./lib/baseService');
-const createFabricClient = require('./lib/createFabricClient');
-const invoke = require('./lib/invoke');
-const query = require('./lib/query');
-const registerChaincodeEventListener = require('./lib/registerChaincodeEventListener');
+import baseService from './lib/baseService';
+import createFabricClient from './lib/createFabricClient';
+import invoke from './lib/invoke';
+import query from './lib/query';
+import registerChaincodeEventListener from './lib/registerChaincodeEventListener';
 
-module.exports = {
+export default {
     baseService,
     createFabricClient,
     invoke,

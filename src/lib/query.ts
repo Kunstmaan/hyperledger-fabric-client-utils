@@ -1,15 +1,27 @@
-const dropRightWhile = require('lodash.droprightwhile');
-const setUserContext = require('../utils/setUserContext');
-const createChannel = require('../utils/createChannel');
-const serializeArg = require('../utils/serializeArg');
-const logger = require('../utils/logger').getLogger('lib/query');
-const parseErrorMessage = require('../utils/parseErrorMessage');
+import FabricClient from 'fabric-client';
+import dropRightWhileType from 'lodash.droprightwhile';
+import setUserContext from '../utils/setUserContext';
+import createChannel from '../utils/createChannel';
+import serializeArg from '../utils/serializeArg';
+import getLogger from '../utils/getLogger';
+import parseErrorMessage from '../utils/parseErrorMessage';
+const dropRightWhile = require('lodash.droprightwhile') as typeof dropRightWhileType;
 
-module.exports = function query({
+interface Options {
+    fabricClient: FabricClient;
+    chaincode: Chaincode;
+    channelId: string;
+    peer: Peer;
+    userId: string;
+}
+
+const logger = getLogger('lib/query');
+
+export default function query<Response extends Object>({
     fabricClient, chaincode, channelId, peer, userId
-}) {
+}: Options): Promise<Response | string> {
     return new Promise((resolve, reject) => {
-        let channel = null;
+        let channel: FabricClient.Channel = null;
 
         Promise.resolve()
             .then(() =>
@@ -43,9 +55,12 @@ module.exports = function query({
                 logger.info('Query has completed, checking results');
                 // query_responses could have more than one  results if there multiple peers were used as targets
                 if (queryResponses && queryResponses.length === 1) {
+
                     if (queryResponses[0] instanceof Error) {
-                        logger.error('error from query = ', queryResponses[0]);
-                        reject(parseErrorMessage(queryResponses[0].message));
+                        // TODO: not possible following typings?
+                        const errorResponse = queryResponses[0] as Object as Error;
+                        logger.error('error from query = ', errorResponse);
+                        reject(parseErrorMessage(errorResponse.message));
                     } else {
                         logger.info('Response is ', queryResponses[0].toString());
                         const response = queryResponses[0].toString();

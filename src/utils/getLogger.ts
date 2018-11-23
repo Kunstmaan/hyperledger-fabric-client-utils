@@ -1,4 +1,4 @@
-import log4js from 'log4js';
+import * as log4js from 'log4js';
 
 export default function getLogger(name: string) {
     const logger = log4js.getLogger(name);

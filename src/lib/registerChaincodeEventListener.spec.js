@@ -1,6 +1,6 @@
-const createFabricClient = require('./createFabricClient');
-const invoke = require('./invoke');
-const registerChaincodeEventListener = require('./registerChaincodeEventListener');
+const createFabricClient = require('../../dist/lib/createFabricClient').default;
+const invoke = require('../../dist/lib/invoke').default;
+const registerChaincodeEventListener = require('../../dist/lib/registerChaincodeEventListener').default;
 const testSetup = require('../../test/testSetup');
 const {
     keyStorePath, channelId, peer, chaincodeId, userId, orderer

@@ -1,5 +1,5 @@
-const createFabricClient = require('./createFabricClient');
-const query = require('./query');
+const createFabricClient = require('../../dist/lib/createFabricClient').default;
+const query = require('../../dist/lib/query').default;
 const testSetup = require('../../test/testSetup');
 const {
     keyStorePath, channelId, peer, chaincodeId, userId

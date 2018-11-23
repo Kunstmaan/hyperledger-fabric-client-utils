@@ -2,7 +2,7 @@
 const {
     keyStorePath, channelId, peer, orderer, adminUserId, chaincodeId
 } = require('./config');
-const {invoke, createFabricClient} = require('../src/index');
+const {invoke, createFabricClient} = require('../dist/index').default;
 
 async function initLedger() {
     try {

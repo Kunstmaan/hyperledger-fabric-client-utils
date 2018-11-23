@@ -1,4 +1,4 @@
-import getLogger  from './logger';
+import getLogger  from './getLogger';
 
 const logger = getLogger('fabric/parseErrorMessage');
 
@@ -24,7 +24,7 @@ export default function parseErrorMessage(message: string): Error {
             try {
                 const errorResponse = JSON.parse(errorMessageMatch);
                 const errorObject = Array.isArray(errorResponse) ? errorResponse[0] : errorResponse;
-                const error = new Error(errorObject.message || 'Unknown error');
+                const error = new Error(errorObject.message || 'Unknown error') as Error & {[key: string]: any};
                 Object.keys(errorObject).forEach((key) => {
                     error[key] = errorObject[key];
                 });

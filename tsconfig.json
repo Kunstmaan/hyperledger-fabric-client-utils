@@ -1,9 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "es5",
     "module": "commonjs",
     "declaration": true,
     "outDir": "./dist",
-    "strict": true
+    "strict": true,
+    "lib": ["es2017"],
+    "allowSyntheticDefaultImports": true,
+    "strictNullChecks": false,
+    "sourceMap": true,
+    "sourceRoot": "./src",
+    "moduleResolution": "node",
   }
 }
