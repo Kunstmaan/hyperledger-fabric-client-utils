@@ -2,7 +2,7 @@ const dropRightWhile = require('lodash.droprightwhile');
 const setUserContext = require('../utils/setUserContext');
 const createChannel = require('../utils/createChannel');
 const serializeArg = require('../utils/serializeArg');
-const logger = require('../logging/logger').getLogger('lib/query');
+const logger = require('../utils/logger').getLogger('lib/query');
 const parseErrorMessage = require('../utils/parseErrorMessage');
 
 module.exports = function query({

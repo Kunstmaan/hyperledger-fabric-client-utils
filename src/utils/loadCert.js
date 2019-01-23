@@ -1,5 +1,5 @@
 const fs = require('fs');
-const logger = require('../logging/logger').getLogger('fabric/loadCert');
+const logger = require('./logger').getLogger('fabric/loadCert');
 
 module.exports = function loadCert(certPath, certOptions = {}) {
     return new Promise((resolve, reject) => {

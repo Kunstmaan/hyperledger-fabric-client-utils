@@ -1,37 +1,7 @@
 const setUserContext = require('../utils/setUserContext');
-const loadCert = require('../utils/loadCert');
-const logger = require('../logging/logger').getLogger('lib/registerChaincodeEventListener');
-const isGrpcs = require('../utils/isGrpcs');
+const logger = require('../utils/logger').getLogger('libs/registerChaincodeEventListener');
+const registerEventListener = require('../utils/registerEventListener');
 const createChannel = require('../utils/createChannel');
-
-function setupEventHub(fabricClient, peer, channelId) {
-    return new Promise((resolve, reject) => {
-        createChannel({
-            fabricClient,
-            channelId,
-            peers: [peer]
-        })
-            .then(() => {
-                if (!isGrpcs(peer.url)) {
-                    return Promise.resolve();
-                }
-                return loadCert(peer.certPath, peer.certOptions);
-            })
-            .then((peerCertOptions) => {
-                const eventHub = fabricClient.newEventHub();
-                eventHub.setPeerAddr(peer.broadcastUrl, peerCertOptions);
-
-                return setUserContext(fabricClient, peer.adminUserId).then(() => {
-                    return eventHub;
-                });
-            })
-            .then((eventHub) => resolve(eventHub))
-            .catch((error) => {
-                logger.error(error);
-                reject(error);
-            });
-    });
-}
 
 module.exports = async function registerChaincodeEventListener({
     fabricClient,
@@ -41,52 +11,54 @@ module.exports = async function registerChaincodeEventListener({
     eventId,
     onEvent,
     onDisconnect,
-    timeoutForReconnect = 10 * 1000 // every 10 seconds
+    timeoutForReconnect,
+    maxReconnects,
+    fullBlock,
+    startBlock,
+    endBlock,
+    unregister,
+    disconnect
 }) {
-    let regId = null;
-    // Listening for requests and keep requests in sync
-    logger.info(`Setting up event hub for ${eventId} on ${chaincode}`);
+    await setUserContext(fabricClient, peer.adminUserId);
 
-    try {
-        const eventHub = await setupEventHub(fabricClient, peer, channelId);
-        const startListening = () => {
-            logger.info(`Start listening for ${eventId} on ${chaincode}`);
-            eventHub.connect();
-            regId = eventHub.registerChaincodeEvent(
-                chaincode,
-                eventId,
-                (event) => {
-                    if (event.event_name === eventId) {
-                        logger.info(`Event received for ${eventId}`);
-                        logger.debug(event);
-                        const payload = JSON.parse(event.payload.toString('utf8'));
-                        logger.info(`Event payload ${JSON.stringify(payload)}`);
-                        onEvent(payload, eventId);
+    const channel = await createChannel({
+        fabricClient,
+        channelId,
+        peers: [peer]
+    });
+
+    return registerEventListener({
+        channel,
+        peer: channel.getPeers()[0],
+        type: 'Chaincode',
+        args: [chaincode, eventId],
+        onEvent: (event) => {
+            if (event.event_name === eventId) {
+                logger.info(`Event received for ${eventId}`);
+                logger.debug(event);
+                // filtered block events don't give the payload
+                let {payload} = event;
+                if (typeof payload !== 'undefined' && Buffer.isBuffer(payload)) {
+                    try {
+                        payload = JSON.parse(payload.toString('utf8'));
+                    } catch (e) {
+                        // Not a json object
+                        payload = payload.toString('utf8');
                     }
-                },
-                (error) => {
-                    logger.warn(`Private Eventhub disconnected, trying to reconnect ${error}`);
-                    Promise.resolve()
-                        .then(() => {
-                            return typeof onDisconnect === 'function' ? onDisconnect(error, eventId) : undefined;
-                        })
-                        .then(() => {
-                            setTimeout(startListening, timeoutForReconnect);
-                        });
+                    logger.info(`Event payload ${JSON.stringify(payload)}`);
                 }
-            );
-        };
-
-        startListening();
-
-        const stopListening = function() {
-            eventHub.unregisterChaincodeEvent(regId);
-        };
-
-        return {
-            stopListening
-        };
-    } catch (err) {
-        throw new Error(`Failed to initialize event listener for event ${eventId}`);
-    }
+                onEvent(eventId, payload);
+            }
+        },
+        onDisconnect: (error) => {
+            onDisconnect(error, eventId);
+        },
+        timeoutForReconnect,
+        maxReconnects,
+        fullBlock,
+        startBlock,
+        endBlock,
+        unregister,
+        disconnect
+    });
 };

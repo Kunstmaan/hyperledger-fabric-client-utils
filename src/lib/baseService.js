@@ -1,6 +1,6 @@
 const invoke = require('./invoke');
 const query = require('./query');
-const logger = require('../logging/logger').getLogger('lib/baseService');
+const logger = require('../utils/logger').getLogger('lib/baseService');
 const createFabricClient = require('./createFabricClient');
 
 module.exports = (

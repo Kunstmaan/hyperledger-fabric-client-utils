@@ -13,7 +13,7 @@ This repository consists out of a set of utility functions which can be used to 
 
 ## Supported Hyperledger Fabric versions
 
-This library has only been tested against the [v1.1.0](https://github.com/hyperledger/fabric/releases/tag/v1.1.0) version of Hyperledger.
+This library has only been tested against the [v1.3.0](https://github.com/hyperledger/fabric/releases/tag/v1.3.0) version of Hyperledger.
 
 ## API
 
@@ -295,17 +295,39 @@ const eventListener = await registerChaincodeEventListener({
      */
     eventId: 'event-id',
     /**
-     * Callback when the event is triggered. Returns a payload which has the event data.
+     * Callback when the event is triggered. Returns the event id and a payload which has the event data.
      */
-    onEvent: (payload) => {
-        console.log(payload);
+    onEvent: (eventId, payload) => {
+        console.log(eventId, payload);
     },
     /**
      * Called when the listener gets disconnected
      */
     onDisconnect: (error, eventId) => {
         console.log('Listener disconnected due to an error', error, eventId);
-    }
+    },
+    /**
+     * Optional - Max retries to connect the event hub, when not set it retries indefinitely
+     */
+    maxReconnects: 5,
+    /**
+     * Optional - The starting block number for event checking
+     */
+    fullBlock: true,
+    startBlock: 1,
+    /**
+     * Optional - The ending block number for event checking.
+     */
+    endBlock: 5,
+    /**
+     * Optional - This options setting indicates the registration should be removed (unregister) when the event is seen. 
+     */
+    unregister: true,
+    /**
+     * Optional - This option setting Indicates to the ChannelEventHub instance to 
+     * automatically disconnect itself from the peer's channel event service once the event has been seen.
+     */
+    disconnect: true,
 });
 
 // Stop listening for events
