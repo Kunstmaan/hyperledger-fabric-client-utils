@@ -1,9 +1,29 @@
-const setUserContext = require('../utils/setUserContext');
-const logger = require('../utils/logger').getLogger('libs/registerChaincodeEventListener');
-const registerEventListener = require('../utils/registerEventListener');
-const createChannel = require('../utils/createChannel');
+import setUserContext  from '../utils/setUserContext';
+import getLogger  from '../utils/getLogger';
+import registerEventListener  from '../utils/registerEventListener';
+import createChannel  from '../utils/createChannel';
+import FabricClient from 'fabric-client';
 
-module.exports = async function registerChaincodeEventListener({
+interface Options<Payload>{
+    fabricClient: FabricClient;
+    peer: Peer;
+    channelId: string;
+    chaincode: string;
+    eventId: string;
+    onEvent: (eventId: string, payload?: Payload) => void;
+    onDisconnect: (error: Error, eventId: string) => void;
+    timeoutForReconnect?: number;
+    maxReconnects?: number;
+    fullBlock?: boolean;
+    startBlock?: number;
+    endBlock?: number;
+    unregister?: boolean;
+    disconnect?: boolean;
+}
+
+const logger = getLogger('libs/registerChaincodeEventListener');
+
+export default async function registerChaincodeEventListener<Payload extends object = {}>({
     fabricClient,
     peer,
     channelId,
@@ -18,7 +38,7 @@ module.exports = async function registerChaincodeEventListener({
     endBlock,
     unregister,
     disconnect
-}) {
+}: Options<Payload | string>) {
     await setUserContext(fabricClient, peer.adminUserId);
 
     const channel = await createChannel({
@@ -27,27 +47,31 @@ module.exports = async function registerChaincodeEventListener({
         peers: [peer]
     });
 
+    const channelPeer = channel.getPeers()[0];
+
     return registerEventListener({
         channel,
-        peer: channel.getPeers()[0],
+        peer: channelPeer.getPeer(),
         type: 'Chaincode',
         args: [chaincode, eventId],
-        onEvent: (event) => {
+        onEvent: ({event}) => {
             if (event.event_name === eventId) {
                 logger.info(`Event received for ${eventId}`);
                 logger.debug(event);
                 // filtered block events don't give the payload
                 let {payload} = event;
                 if (typeof payload !== 'undefined' && Buffer.isBuffer(payload)) {
+                    let parsedPayload: Payload | string = null;
                     try {
-                        payload = JSON.parse(payload.toString('utf8'));
+                        parsedPayload = JSON.parse(payload.toString('utf8'));
                     } catch (e) {
                         // Not a json object
-                        payload = payload.toString('utf8');
+                        parsedPayload = payload.toString('utf8') as string;
                     }
                     logger.info(`Event payload ${JSON.stringify(payload)}`);
+                    return  onEvent(eventId, parsedPayload);
                 }
-                onEvent(eventId, payload);
+                onEvent(eventId);
             }
         },
         onDisconnect: (error) => {

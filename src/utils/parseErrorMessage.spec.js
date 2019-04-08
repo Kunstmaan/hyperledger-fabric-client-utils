@@ -1,4 +1,4 @@
-const parseErrorMessage = require('./parseErrorMessage');
+const parseErrorMessage = require('../../dist/utils/parseErrorMessage').default;
 
 test('Parses an error string with a custom error object correctly', () => {
     const message =

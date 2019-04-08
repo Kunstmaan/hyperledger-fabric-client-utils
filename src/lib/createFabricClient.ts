@@ -1,7 +1,9 @@
-const FabricClient = require('fabric-client');
-const logger = require('../utils/logger').getLogger('lib/createFabricClient');
+import * as FabricClient from 'fabric-client';
+import getLogger from '../utils/getLogger';
 
-module.exports = function createFabricClient(keyStorePath) {
+const logger = getLogger('lib/createFabricClient');
+
+export default function createFabricClient(keyStorePath: string): Promise<FabricClient> {
     const fabricClient = new FabricClient();
 
     return new Promise((resolve, reject) => {

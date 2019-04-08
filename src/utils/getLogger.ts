@@ -1,6 +1,6 @@
-const log4js = require('log4js');
+import * as log4js from 'log4js';
 
-module.exports.getLogger = (name) => {
+export default function getLogger(name: string) {
     const logger = log4js.getLogger(name);
 
     // set the logging level based on the environment variable

@@ -1,13 +1,24 @@
-const loadCert = require('../utils/loadCert');
-const logger = require('./logger').getLogger('utils/createChannel');
-const isGrpcs = require('../utils/isGrpcs');
 
-module.exports = function createChannel({
+import FabricClient from 'fabric-client';
+import loadCert from '../utils/loadCert';
+import getLogger from './getLogger';
+import isGrpcs  from './isGrpcs';
+
+const logger = getLogger('utils/createChannel');
+
+interface CreateChannelOptions {
+    fabricClient: FabricClient;
+    channelId: string;
+    peers?: Peer[];
+    orderer?: Orderer;
+}
+
+export default function createChannel({
     fabricClient,
     channelId,
     peers = [],
     orderer = undefined
-}) {
+}: CreateChannelOptions): Promise<FabricClient.Channel> {
     const ordererUrl = orderer ? orderer.url : undefined;
 
     const channel = fabricClient.newChannel(channelId);
@@ -15,13 +26,13 @@ module.exports = function createChannel({
     const registerPeersCertOnChannel = () => Promise.all(peers.map((peer) => {
         return new Promise((resolve, reject) => {
             if (!isGrpcs(peer.url)) {
-                channel.addPeer(fabricClient.newPeer(peer.url));
+                channel.addPeer(fabricClient.newPeer(peer.url), peer.mspid);
                 resolve();
                 return;
             }
             loadCert(peer.certPath, peer.certOptions)
                 .then((certOptions) => {
-                    channel.addPeer(fabricClient.newPeer(peer.url, certOptions));
+                    channel.addPeer(fabricClient.newPeer(peer.url, certOptions), peer.mspid);
                     resolve();
                 })
                 .catch(reject);

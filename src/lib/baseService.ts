@@ -1,19 +1,49 @@
-const invoke = require('./invoke');
-const query = require('./query');
-const logger = require('../utils/logger').getLogger('lib/baseService');
-const createFabricClient = require('./createFabricClient');
+import invoke from './invoke';
+import query from './query';
+import getLogger from '../utils/getLogger';
+import createFabricClient from './createFabricClient';
 
-module.exports = (
-    keyStorePath,
-    chaincodeId,
-    getServices = () => {},
+interface Options {
+    channelId?: string;
+    peers?: Peer[];
+    orderer?: Orderer;
+}
+
+interface QueryOptions {
+    chaincode: Chaincode;
+    userId: string;
+    peer?: Peer;
+    channelId?: string;
+}
+
+interface InvokeOptions {
+    chaincode: Chaincode;
+    userId: string;
+    peers?: Peer[];
+    channelId?: string;
+    orderer?: Orderer;
+}
+
+type getServicesFunction<Services extends {[key: string]: Function}> = (
+    query: (options: QueryOptions) => Promise<{} | string>,
+    invoke: (options: InvokeOptions) => Promise<{} | string>
+) => Services | {};
+
+const logger = getLogger('lib/baseService');
+
+export default function baseService<Services extends {[key: string]: Function}>(
+    keyStorePath: string,
+    chaincodeId: string,
+    getServices: getServicesFunction<Services> = () => ({}),
     {
         channelId: defaultChannelId,
         peers: defaultPeers = [],
         orderer: defaultOrderer
-    } = {}
-) => {
-    const setChaincodeOption = (chaincode) => {
+    }: Options = {}
+): {
+    getChaincodeId: () => string;
+} & Services {
+    const setChaincodeOption = (chaincode: Chaincode) => {
         const updatedChaincode = {...chaincode};
         if (typeof chaincode.id !== 'string') {
             updatedChaincode.id = chaincodeId;
@@ -26,9 +56,9 @@ module.exports = (
     };
 
     const services = getServices(
-        async ({
+        async({
             chaincode, channelId = defaultChannelId, peer = defaultPeers[0], userId
-        }) => {
+        }: QueryOptions) => {
             const fabricClient = await createFabricClient(keyStorePath);
             const options = {
                 chaincode: setChaincodeOption(chaincode),
@@ -44,7 +74,7 @@ module.exports = (
         },
         async ({
             chaincode, channelId = defaultChannelId, peers = defaultPeers, orderer = defaultOrderer, userId
-        }) => {
+        }: InvokeOptions) => {
             const fabricClient = await createFabricClient(keyStorePath);
             const options = {
                 chaincode: setChaincodeOption(chaincode),
@@ -61,8 +91,9 @@ module.exports = (
         }
     );
 
+
     return {
         getChaincodeId: () => chaincodeId,
-        ...services
-    };
+        ...(services as object),
+    } as Services & { getChaincodeId: () => string };
 };
